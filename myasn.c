@@ -17,6 +17,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -27,14 +28,36 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include "ip2asn.h"
 
 void Usage(const char * prog_name) {
-	fprintf(stderr, "Usage is:\n%s ip-address\n", prog_name) ;
+	fprintf(stderr, "Usage is:\n%s [options] ip-address\n\nOptions:\n\t-s: silent mode, print nothing but the exit value is the ASN\n\t-h: help, print this message\n", prog_name) ;
 	exit(1) ;
 }
 
 int main (int argc, char ** argv) {
-	if (argc != 2) Usage(argv[0]) ;
+	int c ;
+	int verbose = 1 ;
+	int help = 0 ;
+	unsigned long int asn ;
+	char * address ;
 
-	printf("ASN of %s = %ld", argv[1], GetASN(argv[1])) ;
-	printf("  (based on asn.cymru.com)\n") ;
-	return 0 ;
+	while ( (c = getopt(argc, argv, "hs")) != -1) {
+		switch (c) {
+		case 'h': help = 1 ; break ;
+		case 's': verbose =0 ; break ;
+		default: Usage(argv[0]) ;
+		}
+	}
+	if (help) Usage(argv[0]) ;
+	if (optind + 1 != argc) {
+		fprintf(stderr, "Missing argument: address\n") ;
+		Usage(argv[0]) ;
+	}
+printf("optind=%d, argc=%d\n", optind, argc) ;
+	address = argv[optind] ;
+printf("optind=%d, argc=%d, address=%s\n", optind, argc, address) ;
+	asn = GetASN(address) ;
+	if (verbose)
+		printf("ASN of %s = %ld (based on asn.cymru.com)\n", address, asn) ; 
+	else
+		printf("%ld",asn) ;
+	return (int) asn ;
 }
