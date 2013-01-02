@@ -51,9 +51,7 @@ int main (int argc, char ** argv) {
 		fprintf(stderr, "Missing argument: address\n") ;
 		Usage(argv[0]) ;
 	}
-printf("optind=%d, argc=%d\n", optind, argc) ;
 	address = argv[optind] ;
-printf("optind=%d, argc=%d, address=%s\n", optind, argc, address) ;
 	asn = GetASN(address) ;
 	if (verbose)
 		printf("ASN of %s = %ld (based on asn.cymru.com)\n", address, asn) ; 
