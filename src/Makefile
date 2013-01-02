@@ -1,17 +1,20 @@
 CFLAGS = -Wall -O2 -g
 LDFLAGS = -lresolv 
+OBJECTS = myasn.o ip2asn.o
+PREFIX = /usr/local
 
 all: myasn
 
-myasn: myasn.o ip2asn.o
+myasn: $(OBJECTS)
 
 myasn.o: myasn.c ip2asn.h
 
 ip2asn.o: ip2asn.c ip2asn.h
 
 clean:
-	rm -f myasn *.o
+	rm -f myasn $(OBJECTS) 
 
 install: myasn
-	cp myasn /usr/local/bin
-	chmod a+rx /usr/local/bin/myasn
+	mkdir -p $(PREFIX)/bin
+	cp myasn $(PREFIX)/bin
+	chmod a+rx $(PREFIX)/bin/myasn
