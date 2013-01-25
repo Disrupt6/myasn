@@ -27,7 +27,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <resolv.h>
 #include "ip2asn.h"
 
-#define IP2ASN_DEBUG
+#undef IP2ASN_DEBUG
 
 #define MAX_REVERSE_NAME	256 
 #define DNS_ANSWER_LENGTH	512
@@ -171,6 +171,7 @@ int GetASNName(const unsigned long asn, char * buffer, const int buffer_length) 
 	char value[DNS_ANSWER_LENGTH+1] ;
 	HEADER * h ;
 	unsigned char * pRR ; 
+	char * lastSlash ;
 	char asn_as_string[13] ; /* Max length of 2*32 as unsigned +3 for null & AS */
 
 	snprintf(asn_as_string, 12, "AS%ld", asn) ;
@@ -212,6 +213,14 @@ int GetASNName(const unsigned long asn, char * buffer, const int buffer_length) 
 	printf("TXT(%d) = '%s'\n", labelLength, value) ;
 #endif
 	/* Response is '16276 | FR | ripencc | 2001-02-15 | OVH OVH Systems' */
-	strncpy(buffer, value, buffer_length) ;
+	
+	lastSlash = rindex(value, '|') ;
+	if (lastSlash == NULL) {
+		return -1 ;
+	}
+	lastSlash ++ ; /* Skip the | */
+	while ((lastSlash != 0) && (*lastSlash == ' ')) lastSlash++ ;
+	strncpy(buffer, lastSlash, buffer_length) ;
+	buffer[buffer_length-1] = 0 ;  /* Just to be sure it is null terminated */
 	return 0 ;
 }
