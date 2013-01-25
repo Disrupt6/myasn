@@ -8,9 +8,8 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-/* TODO use nquery to be thread safe???? */
-
 /* History
+- 2013/01/25: also fetch asn_name
 - 2012/12/27: first release
 */
 
@@ -27,6 +26,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <resolv.h>
 #include "ip2asn.h"
 
+#define MAX_ASN_NAME 256
+
 void Usage(const char * prog_name) {
 	fprintf(stderr, "Usage is:\n%s [options] ip-address\n\nOptions:\n\t-s: silent mode, print nothing but the exit value is the ASN\n\t-h: help, print this message\n", prog_name) ;
 	exit(1) ;
@@ -38,6 +39,7 @@ int main (int argc, char ** argv) {
 	int help = 0 ;
 	unsigned long int asn ;
 	char * address ;
+	char asn_name[MAX_ASN_NAME] ;
 
 	while ( (c = getopt(argc, argv, "hs")) != -1) {
 		switch (c) {
@@ -57,5 +59,12 @@ int main (int argc, char ** argv) {
 		printf("ASN of %s = %ld (based on asn.cymru.com)\n", address, asn) ; 
 	else
 		printf("%ld",asn) ;
+	if (GetASNName(asn, asn_name, MAX_ASN_NAME))
+		fprintf(stderr,"Cannot get the name of ASN %d.\n", asn) ;
+	else
+		if (verbose)
+			printf("\tASN%ld is %s\n", asn, asn_name) ; 
+		else
+			printf(" (%s)",asn_name) ;
 	return (int) asn ;
 }
