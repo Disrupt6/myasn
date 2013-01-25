@@ -11,6 +11,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 /* TODO use nquery to be thread safe???? */
 
 /* History
+- 2013/01/25: also fetch ASN name
 - 2012/12/27: first release
 */
 
@@ -25,6 +26,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <arpa/nameser.h>
 #include <resolv.h>
 #include "ip2asn.h"
+
+#define IP2ASN_DEBUG
 
 #define MAX_REVERSE_NAME	256 
 #define DNS_ANSWER_LENGTH	512
@@ -160,4 +163,55 @@ unsigned long int GetASN(const char * ip) {
 		return GetASN4(ip) ;
 	else
 		return GetASN6(ip) ;
+}
+
+int GetASNName(const unsigned long asn, char * buffer, const int buffer_length) {
+	int length, rrLength, labelLength ;
+	unsigned char answer[DNS_ANSWER_LENGTH] ;
+	char value[DNS_ANSWER_LENGTH+1] ;
+	HEADER * h ;
+	unsigned char * pRR ; 
+	char asn_as_string[13] ; /* Max length of 2*32 as unsigned +3 for null & AS */
+
+	snprintf(asn_as_string, 12, "AS%ld", asn) ;
+#ifdef IP2ASN_DEBUG
+	printf("Querying DNS for the TXT record of %s.asn.cymru.com...\n", asn_as_string) ;
+#endif
+
+	length = res_querydomain(asn_as_string, "asn.cymru.com", C_IN, T_TXT, answer, sizeof(answer));
+	h = (HEADER *) answer ;
+#ifdef IP2ASN_DEBUG
+	Dump(answer, length) ;
+	printf("First %d bytes:\n", sizeof(HEADER)) ;
+	printf("%d questions\n", ntohs(h->qdcount)) ;
+	printf("%d answers\n", ntohs(h->ancount)) ;
+	printf("%d authority\n", ntohs(h->nscount)) ;
+	printf("%d ressources\n", ntohs(h->arcount)) ;
+#endif
+	if (ntohs(h->ancount) == 0) {
+		fprintf(stderr, "Received no valid answer from DNS server...\n") ;
+		return -1 ;
+	} else if (ntohs(h->ancount) != 1) {
+		fprintf(stderr, "Received more than 1 answer from DNS server!!!\n") ;
+	}
+	pRR = answer + sizeof(HEADER) ;
+	pRR = skipQuestions(pRR, ntohs(h->qdcount)) ;
+	/* pRR now points to the encoded answer RR */
+	pRR = skipName(pRR) ; /* Skip the name of the answer to go to the RR type */
+	if (pRR[0] * 256 + pRR[1] != T_TXT) fprintf(stderr, "Oups... cannot decode the DNS answer part, wrong RR type\n") ;
+	pRR += 2 ; /* Move to RR class */
+	if (pRR[0] * 256 + pRR[1] != C_IN) fprintf(stderr, "Oups... cannot decode the DNS answer part, wrong RR class\n") ;
+	pRR += 6 ; /* Simply skip RR class + TTL */
+	rrLength = pRR[0] * 256 + pRR[1] ; /* RRLENGTH */
+	if (rrLength > DNS_ANSWER_LENGTH) rrLength = DNS_ANSWER_LENGTH ; /* Ugly truncation */
+	pRR +=2 ; /* Skip the RR length */
+	labelLength = (unsigned char) *pRR ;
+	memcpy(value, pRR+1, labelLength) ; /* One byte for the label length followed by the label ... assuming a single label here */
+	value[labelLength] = 0 ;
+#ifdef IP2ASN_DEBUG
+	printf("TXT(%d) = '%s'\n", labelLength, value) ;
+#endif
+	/* Response is '16276 | FR | ripencc | 2001-02-15 | OVH OVH Systems' */
+	strncpy(buffer, value, buffer_length) ;
+	return 0 ;
 }

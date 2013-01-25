@@ -20,5 +20,6 @@ R A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COP
 
 unsigned long int GetASN(const char * ip) ;
 
+int GetASNName(const unsigned long asn, char * name, const int length) ;
 
 #endif 
