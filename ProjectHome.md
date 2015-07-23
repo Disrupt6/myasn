@@ -1,0 +1,1 @@
+Using team Cymru DNS service, this C code uses libresolv (so a good example on how to use the infamous res\_query())  to convert the IPv4/IPv6 address passed as ARGV into an ASN.
